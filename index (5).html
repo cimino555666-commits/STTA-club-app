@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Club Ladder Display</title>
+<style>
+:root{--bg:#eef2f5;--panel:#fff;--ink:#0d1b2a;--mute:#5b6b7b;--line:#d3dce4;--accent:#14365c;--ball:#e8761a;--onaccent:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme="dark"]{--bg:#0e2540;--panel:#14365c;--ink:#f4f6f8;--mute:#9fb3c8;--line:#2a4d78;--accent:#f4f6f8;--ball:#ff9a3d;--onaccent:#0e2540}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Barlow","Segoe UI",system-ui,sans-serif;font-size:20px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:48px 24px;padding:20px 24px 8px}
+h1{font:700 40px/1.05 "Barlow Condensed","Arial Narrow",sans-serif;margin:0;flex:1 1 100%;color:var(--accent)}
+h1 .logo{display:block;height:110px;width:auto;margin:0 auto}
+h1{animation:logoFloat 5s ease-in-out 1.2s infinite}
+h1 .logo{animation:logoIn 1s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes logoIn{from{opacity:0;transform:translateY(-48px) scale(.8) rotate(-6deg)}to{opacity:1;transform:none}}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@media (prefers-reduced-motion:reduce){h1,h1 .logo{animation:none}}
+nav,.chips{display:flex;gap:8px}
+button{font:inherit;color:inherit;cursor:pointer}
+.tab,.chip{min-height:60px;padding:0 26px;border-radius:30px;border:2px solid var(--line);background:var(--panel);font-weight:600}
+.chip{min-height:52px;padding:0 20px;font-size:18px}
+.tab[aria-pressed="true"],.chip[aria-pressed="true"]{background:var(--accent);color:var(--onaccent);border-color:var(--accent)}
+main{padding:8px 24px 32px;max-width:1100px;margin:0 auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:8px 0 14px;color:var(--mute);font-size:18px}
+.scroll{overflow-x:auto;border-radius:16px;border:2px solid var(--line);background:var(--panel)}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{padding:16px 14px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{font-size:16px;font-weight:600;color:var(--mute)}
+th:nth-child(2),td:nth-child(2){text-align:left}
+th:first-child,td:first-child{text-align:center;width:64px}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer}
+tbody tr:active{background:var(--bg)}
+.s1{position:sticky;left:0;z-index:1;background:var(--panel)}
+.s2{position:sticky;left:64px;z-index:1;background:var(--panel)}
+td.pos{font:700 28px "Barlow Condensed","Arial Narrow",sans-serif}
+tbody tr:first-child td.pos{color:var(--ball)}
+td.name{font-weight:600;font-size:22px}
+td.name small{display:block;font-weight:400;font-size:16px;color:var(--mute)}
+td.key{font:700 28px "Barlow Condensed","Arial Narrow",sans-serif}
+.card[aria-pressed="true"]{border-color:var(--accent)}
+.card .none{color:var(--mute);font-size:18px;margin-top:12px}
+.empty{padding:40px 20px;text-align:center;color:var(--mute);font-size:20px;background:var(--panel);border:2px solid var(--line);border-radius:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{text-align:left;padding:20px;border-radius:16px;border:2px solid var(--line);background:var(--panel);min-height:150px}
+.card h3{margin:0 0 4px;font:700 28px "Barlow Condensed","Arial Narrow",sans-serif}
+.card p{margin:0;color:var(--mute);font-size:18px}
+.card ul{margin:12px 0 0;padding:0;list-style:none;font-size:20px}
+.card li{padding:4px 0}
+dialog{border:0;border-radius:20px;padding:0;width:min(560px,92vw);background:var(--panel);color:var(--ink)}
+dialog::backdrop{background:rgba(5,15,28,.6)}
+.sheet{padding:28px}
+.sheet h2{font:700 38px/1 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 4px}
+.prof{display:flex;gap:18px;align-items:center}
+.avatar{position:relative;flex:none;width:96px;height:96px;border-radius:50%;overflow:hidden;background:var(--accent);color:var(--onaccent);display:flex;align-items:center;justify-content:center;font:700 38px "Barlow Condensed","Arial Narrow",sans-serif}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.info{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;margin:20px 0 0;padding:16px 18px;background:var(--bg);border-radius:14px;font-size:18px}
+.info dt{color:var(--mute)}
+.info dd{margin:0;font-weight:600}
+.rate{display:grid;gap:12px;margin:16px 0 0}
+.rate div{display:grid;grid-template-columns:84px 1fr 56px;align-items:center;gap:14px;font-size:18px}
+.rate .track{height:14px;border-radius:7px;background:var(--bg);overflow:hidden}
+.rate .fill{display:block;height:100%;border-radius:7px;background:var(--accent)}
+.rate b{text-align:right;font:700 24px "Barlow Condensed","Arial Narrow",sans-serif}
+.rate b small{font:500 14px "Barlow","Segoe UI",sans-serif;color:var(--mute)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 22px}
+.stat{background:var(--bg);border-radius:14px;padding:14px;text-align:center}
+.stat b{display:block;font:700 40px/1 "Barlow Condensed","Arial Narrow",sans-serif}
+.stat span{font-size:16px;color:var(--mute)}
+.close{width:100%;min-height:64px;border-radius:32px;border:0;background:var(--accent);color:var(--onaccent);font-weight:700}
+@media (max-width:640px){
+body{font-size:16px}
+header{padding:14px 12px 4px;gap:34px 10px}
+h1{font-size:30px;flex-basis:100%}
+h1 .logo{height:80px}
+nav{width:100%;gap:4px}
+.tab{flex:1 1 0;min-width:0;min-height:52px;padding:0 2px;font-size:14px}
+main{padding:4px 12px 24px}
+.bar{font-size:15px}
+.chip{min-height:46px;padding:0 14px;font-size:16px}
+table{min-width:0}
+th,td{padding:12px 6px}
+th{font-size:13px}
+th:first-child,td:first-child{width:36px}
+td.pos{font-size:22px}
+td.name{font-size:17px}
+td.name small{font-size:13px}
+td.key{font-size:22px}
+.t-teams{min-width:640px}
+.t-players{min-width:600px}
+.s2{left:36px}
+.t-players th:nth-child(3),.t-players td:nth-child(3),.t-players th:nth-child(6),.t-players td:nth-child(6){display:none}
+.scroll{border-radius:12px}
+.sheet{padding:20px}.stats{grid-template-columns:repeat(2,1fr)}
+.avatar{width:72px;height:72px;font-size:28px}
+.sheet h2{font-size:32px}
+.info{font-size:16px}
+.rate div{grid-template-columns:70px 1fr 48px;gap:10px;font-size:16px}
+}
+</style>
+</head>
+<body>
+<header>
+<h1><img class="logo" src="logo.png" alt="Sunraysia Table Tennis Association"></h1>
+<nav aria-label="View">
+<button class="tab" data-v="pennant" aria-pressed="false">Pennant</button>
+<button class="tab" data-v="teams" aria-pressed="true">Ladder</button>
+<button class="tab" data-v="aggs" aria-pressed="false">Aggs</button>
+<button class="tab" data-v="players" aria-pressed="false">Players</button>
+<button class="tab" data-v="ratings" aria-pressed="false">Ratings</button>
+<button class="tab" data-v="roster" aria-pressed="false">Teams</button>
+</nav>
+</header>
+<main>
+<div class="bar" id="bar"></div>
+<div id="view"></div>
+</main>
+<dialog id="dlg"><div class="sheet" id="sheet"></div></dialog>
+<script>
+var TEAMS = [
+{id:"A", name:"Choices Flooring Mildura", div:"Pennant One"},
+{id:"B", name:"Cookes Pools &amp; Spas", div:"Pennant One"},
+{id:"C", name:"Mallee Bearings", div:"Pennant One"},
+{id:"D", name:"Regional Taxation Services", div:"Pennant One"},
+{id:"E", name:"Weightmans Packaging", div:"Pennant One"},
+{id:"F", name:"Tankard Dental", div:"Pennant One"},
+{id:"G", name:"Sammy’s Slammers", div:"Pennant Two"},
+{id:"H", name:"Pinnacle Packers", div:"Pennant Two"},
+{id:"I", name:"Dunkley Scales", div:"Pennant Two"},
+{id:"J", name:"Weightmans Packaging", div:"Pennant Two"},
+{id:"K", name:"Mallee Meats", div:"Pennant Two"},
+{id:"L", name:"Tankard Dental", div:"Pennant Two"},
+{id:"M", name:"Mallee Meats", div:"Pennant Three"},
+{id:"N", name:"Regional Taxation Services", div:"Pennant Three"},
+{id:"O", name:"Dunkley Scales", div:"Pennant Three"},
+{id:"P", name:"Cookes Pools &amp; Spas", div:"Pennant Three"},
+{id:"Q", name:"Exposed Signage/Apparel", div:"Pennant Three"},
+{id:"R", name:"Mallee Bearings", div:"Pennant Three"}
+];
+/* Team ladder figures (entered by hand from the club results).
+w/l = match wins/losses, pts = ladder points, rf/ra = rubbers for/against, gf/ga = games for/against.
+Teams with no entry show zeros. */
+var LADDER = {
+D:{w:3,l:1,pts:12,rf:28,ra:16,gf:95,ga:70},
+A:{w:3,l:1,pts:12,rf:24,ra:18,gf:84,ga:68},
+E:{w:3,l:1,pts:12,rf:24,ra:20,gf:87,ga:81},
+F:{w:2,l:2,pts:8,rf:20,ra:24,gf:78,ga:91},
+C:{w:1,l:3,pts:4,rf:20,ra:24,gf:81,ga:82},
+B:{w:0,l:4,pts:0,rf:14,ra:28,gf:63,ga:96}
+};
+var DIVS = ["Pennant One","Pennant Two","Pennant Three","Pennant Four"];
+/* p = matches played, w = matches won, gw/gl = games won/lost */
+var PLAYERS = [
+{n:"Arhuang (Wong) Lau", t:"A", p:6, w:6, gw:0, gl:0},
+{n:"Rohan Reimers", t:"A", p:12, w:8, gw:0, gl:0},
+{n:"Jason Gifkins", t:"A", p:12, w:4, gw:0, gl:0},
+{n:"Matt Ljubic", t:"B", p:0, w:0, gw:0, gl:0},
+{n:"Mark Dorman", t:"B", p:12, w:6, gw:0, gl:0},
+{n:"Duy Truong", t:"B", p:12, w:3, gw:0, gl:0},
+{n:"Jackson Tung", t:"C", p:12, w:9, gw:0, gl:0},
+{n:"Paul Kealley", t:"C", p:12, w:6, gw:0, gl:0},
+{n:"Ashley Morrison", t:"C", p:12, w:3, gw:0, gl:0},
+{n:"Kate Carmichael", t:"D", p:12, w:11, gw:0, gl:0},
+{n:"Andrew Cannard", t:"D", p:12, w:7, gw:0, gl:0},
+{n:"Michael Tan", t:"D", p:12, w:3, gw:0, gl:0},
+{n:"Wayne Carmichael", t:"E", p:12, w:9, gw:0, gl:0},
+{n:"Thanh Nguyen", t:"E", p:12, w:7, gw:0, gl:0},
+{n:"Lee Leeson", t:"E", p:12, w:3, gw:0, gl:0},
+{n:"Jamie Kealley", t:"F", p:12, w:8, gw:0, gl:0},
+{n:"Reece Kurrle", t:"F", p:12, w:8, gw:0, gl:0},
+{n:"Ed Hung", t:"F", p:12, w:0, gw:0, gl:0},
+{n:"Daniel Jansen", t:"G", p:0, w:0, gw:0, gl:0},
+{n:"Ryan Hensgen", t:"G", p:0, w:0, gw:0, gl:0},
+{n:"Yen Hwak", t:"G", p:0, w:0, gw:0, gl:0},
+{n:"Therese Fitzpatrick", t:"H", p:0, w:0, gw:0, gl:0},
+{n:"James Jarvis", t:"H", p:0, w:0, gw:0, gl:0},
+{n:"Koby Grace", t:"H", p:0, w:0, gw:0, gl:0},
+{n:"Rasin Bhuiyan", t:"I", p:0, w:0, gw:0, gl:0},
+{n:"Chris Cen", t:"I", p:0, w:0, gw:0, gl:0},
+{n:"Sam Campbell", t:"I", p:0, w:0, gw:0, gl:0},
+{n:"Kevin Johns", t:"J", p:0, w:0, gw:0, gl:0},
+{n:"Steve Parker", t:"J", p:0, w:0, gw:0, gl:0},
+{n:"Andrew Kremor", t:"J", p:0, w:0, gw:0, gl:0},
+{n:"Quentin Clark", t:"K", p:0, w:0, gw:0, gl:0},
+{n:"Deegan Kerslake", t:"K", p:0, w:0, gw:0, gl:0},
+{n:"Jamie Stanley", t:"K", p:0, w:0, gw:0, gl:0},
+{n:"Josh Arnold", t:"L", p:0, w:0, gw:0, gl:0},
+{n:"Kym Sykes", t:"L", p:0, w:0, gw:0, gl:0},
+{n:"Juan Castro", t:"L", p:0, w:0, gw:0, gl:0},
+{n:"Darren Bottams", t:"M", p:0, w:0, gw:0, gl:0},
+{n:"Tom Gilmour", t:"M", p:0, w:0, gw:0, gl:0},
+{n:"Jake Hines", t:"M", p:0, w:0, gw:0, gl:0},
+{n:"Peter Fitzpatrick", t:"N", p:0, w:0, gw:0, gl:0},
+{n:"Maria Starikov", t:"N", p:0, w:0, gw:0, gl:0},
+{n:"Conner Burnett", t:"N", p:0, w:0, gw:0, gl:0},
+{n:"Karly Leach", t:"O", p:0, w:0, gw:0, gl:0},
+{n:"Rodney Galvin", t:"O", p:0, w:0, gw:0, gl:0},
+{n:"Jeff Forsyth", t:"O", p:0, w:0, gw:0, gl:0},
+{n:"Sabrina Fitzpatrick", t:"P", p:0, w:0, gw:0, gl:0},
+{n:"Glenn Leeson", t:"P", p:0, w:0, gw:0, gl:0},
+{n:"Joel Bottams", t:"P", p:0, w:0, gw:0, gl:0},
+{n:"Nick Kiapekos", t:"Q", p:0, w:0, gw:0, gl:0},
+{n:"Leanne Wilson", t:"Q", p:0, w:0, gw:0, gl:0},
+{n:"Nathan Beard", t:"Q", p:0, w:0, gw:0, gl:0},
+{n:"Hayden Wilson", t:"R", p:0, w:0, gw:0, gl:0},
+{n:"Steve Pongrac", t:"R", p:0, w:0, gw:0, gl:0},
+{n:"Jakob Grzan", t:"R", p:0, w:0, gw:0, gl:0}
+];
+/* Honours: Super 8s, aggregate and grand final wins per player.
+Key = player name exactly as in PLAYERS. Players not listed show 0.
+Example: "Rohan Reimers": {s8:1, agg:0, gf:2} */
+var HONOURS = {
+"Rohan Reimers": {s8:3, agg:7, gf:6},
+"Jamie Kealley": {s8:1, agg:3, gf:3}
+};
+/* Number 1 prize medal shown beside Aggregates */
+var MEDAL = '<svg viewBox="0 0 24 24" width="1.1em" height="1.1em" style="vertical-align:-.2em" aria-hidden="true"><path d="M7 1h4l2 7H9z" fill="#c62828"/><path d="M17 1h-4l-2 7h4z" fill="#14365c"/><circle cx="12" cy="15.5" r="7.5" fill="#f2b01e" stroke="#b57d00" stroke-width="1.5"/><text x="12" y="19.5" text-anchor="middle" font-size="11" font-weight="700" font-family="Arial,sans-serif" fill="#7a5200">1</text></svg>';
+/* Super 8 badge shown beside Super 8s */
+var SUPER8 = '<svg viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align:-.25em" aria-hidden="true"><circle cx="12" cy="12" r="11" style="fill:var(--accent)"/><circle cx="12" cy="11.5" r="5.2" style="fill:var(--onaccent)"/><text x="12" y="15.4" text-anchor="middle" font-size="9.5" font-weight="700" font-family="Arial,sans-serif" style="fill:var(--accent)">8</text><ellipse cx="7.8" cy="6.3" rx="2.6" ry="1.6" fill="#ffffff" opacity=".3" transform="rotate(-35 7.8 6.3)"/></svg>';
+function hon(p){var h = HONOURS[p.n] || {}; return {s8:h.s8||0, agg:h.agg||0, gf:h.gf||0}}
+/* Ratings Central ratings. Key = player name exactly as in PLAYERS.
+Example: "Rohan Reimers": 1450 */
+var RATINGS = {
+"Arhuang (Wong) Lau": 1479,
+"Wayne Carmichael": 1432,
+"Kate Carmichael": 1407,
+"Matt Ljubic": 1382,
+"Jackson Tung": 1365,
+"Reece Kurrle": 1337,
+"Jamie Kealley": 1332,
+"Andrew Cannard": 1272,
+"Mark Dorman": 1270,
+"Thanh Nguyen": 1262,
+"Rohan Reimers": 1258,
+"Paul Kealley": 1251,
+"Duy Truong": 1149,
+"Lee Leeson": 1100,
+"Jason Gifkins": 1090,
+"Kevin Johns": 1077,
+"Josh Arnold": 1029,
+"Michael Tan": 1021,
+"Ashley Morrison": 1017,
+"Rasin Bhuiyan": 1007,
+"Quentin Clark": 990,
+"Ed Hung": 960,
+"Therese Fitzpatrick": 951,
+"Chris Cen": 937,
+"Kym Sykes": 936,
+"James Jarvis": 925,
+"Daniel Jansen": 918,
+"Peter Fitzpatrick": 892,
+"Koby Grace": 892,
+"Sabrina Fitzpatrick": 887,
+"Andrew Kremor": 885,
+"Rodney Galvin": 857,
+"Sam Campbell": 852,
+"Glenn Leeson": 843,
+"Karly Leach": 818,
+"Hayden Wilson": 804,
+"Deegan Kerslake": 783,
+"Ryan Hensgen": 783,
+"Nick Kiapekos": 771,
+"Tom Gilmour": 771,
+"Jakob Grzan": 752,
+"Steve Parker": 733,
+"Steve Pongrac": 727,
+"Maria Starikov": 697,
+"Leanne Wilson": 682,
+"Conner Burnett": 658,
+"Jeff Forsyth": 607,
+"Nathan Beard": 598,
+"Jake Hines": 476,
+"Yen Hwak": 839,
+"Darren Bottams": 957,
+"Joel Bottams": 645,
+"Juan Castro": 725,
+"Jamie Stanley": 810
+};
+var view = "teams", sortBy = "w", teamFilter = "all", pen = DIVS[0], idle;
+var $ = function(id){return document.getElementById(id)};
+function tn(id){return TEAMS.filter(function(t){return t.id===id})[0].name}
+function inPen(id){return TEAMS.filter(function(t){return t.id===id})[0].div===pen}
+function pb(){return '<b style="color:var(--ink)">'+pen+'</b> · '}
+function empty(){return '<div class="empty">No teams entered for '+pen+' yet.</div>'}
+function pct(p){return p.p ? Math.round(100*p.w/p.p) : 0}
+function ratio(f,a){return a ? 100*f/a : 0}
+function teamRows(){
+return TEAMS.filter(function(t){return t.div===pen}).map(function(t){
+var s = LADDER[t.id] || {w:0,l:0,pts:0,rf:0,ra:0,gf:0,ga:0};
+return {t:t, w:s.w, l:s.l, pts:s.pts, rf:s.rf, ra:s.ra, gf:s.gf, ga:s.ga, rp:ratio(s.rf,s.ra), gp:ratio(s.gf,s.ga)};
+}).sort(function(a,b){return b.pts-a.pts || b.rp-a.rp || b.gp-a.gp});
+}
+function render(){
+var v = $("view"), bar = $("bar"), h = "";
+document.querySelectorAll(".tab").forEach(function(b){b.setAttribute("aria-pressed", b.dataset.v===view)});
+if(view==="pennant"){
+bar.innerHTML = "Choose a pennant to see its ladder, players and teams.";
+h = '<div class="cards">';
+DIVS.forEach(function(d){
+var ts = TEAMS.filter(function(t){return t.div===d});
+h += '<button class="card" data-pen="'+d+'" aria-pressed="'+(d===pen)+'"><h3>'+d+'</h3><p>'+ts.length+(ts.length===1?' team':' teams')+'</p>';
+h += ts.length ? '<ul>'+ts.map(function(t){return '<li>'+t.name+'</li>'}).join("")+'</ul>' : '<div class="none">No teams entered yet</div>';
+h += '</button>';
+});
+v.innerHTML = h + '</div>';
+} else if(view==="teams"){
+bar.innerHTML = pb()+"Tap a team to see its players. 4 points per match win.";
+if(!teamRows().length){ v.innerHTML = empty(); return; }
+h = '<div class="scroll"><table class="t-teams"><thead><tr><th class="s1"></th><th class="s2">Team</th><th>W</th><th>L</th><th>Pts</th><th>Rubbers for</th><th>Rubbers agst</th><th>Games for</th><th>Games agst</th><th>Rubber %</th><th>Game %</th></tr></thead><tbody>';
+teamRows().forEach(function(r,i){
+h += '<tr data-team="'+r.t.id+'"><td class="pos s1">'+(i+1)+'</td><td class="name s2">'+r.t.name+'<small>'+r.t.div+'</small></td><td>'+r.w+'</td><td>'+r.l+'</td><td class="key">'+r.pts+'</td><td>'+r.rf+'</td><td>'+r.ra+'</td><td>'+r.gf+'</td><td>'+r.ga+'</td><td>'+Math.round(r.rp)+'%</td><td>'+Math.round(r.gp)+'%</td></tr>';
+});
+v.innerHTML = h + '</tbody></table></div>';
+} else if(view==="aggs"){
+bar.innerHTML = pb()+"Season wins for each player. Tap a player to see their profile.";
+var ag = PLAYERS.filter(function(p){return inPen(p.t)}).sort(function(a,b){return b.w-a.w || pct(b)-pct(a) || b.gw-a.gw || a.n.localeCompare(b.n)});
+if(!ag.length){ v.innerHTML = empty(); return; }
+h = '<div class="scroll"><table class="t-aggs"><thead><tr><th></th><th>Player</th><th>Played</th><th>Wins</th><th>Lost</th><th>Win %</th></tr></thead><tbody>';
+ag.forEach(function(p,i){
+h += '<tr data-player="'+PLAYERS.indexOf(p)+'"><td class="pos">'+(i+1)+'</td><td class="name">'+p.n+'<small>'+tn(p.t)+'</small></td><td>'+p.p+'</td><td class="key">'+p.w+'</td><td>'+(p.p-p.w)+'</td><td>'+pct(p)+'%</td></tr>';
+});
+v.innerHTML = h + '</tbody></table></div>';
+} else if(view==="players"){
+var opts = [["w","Matches won"],["gw","Games won"],["pct","Win %"],["gf","Grand finals"],["agg","Aggregates"],["s8","Super 8s"]];
+bar.innerHTML = pb()+'Sort by '+opts.map(function(o){return '<button class="chip" data-sort="'+o[0]+'" aria-pressed="'+(sortBy===o[0])+'">'+o[1]+'</button>'}).join("")
++ (teamFilter!=="all" ? ' <button class="chip" data-team-clear="1" aria-pressed="true">'+tn(teamFilter)+' ✕</button>' : "");
+var list = PLAYERS.filter(function(p){return inPen(p.t)&&(teamFilter==="all"||p.t===teamFilter)}).slice().sort(function(a,b){
+var f = sortBy==="pct" ? pct : (sortBy==="s8"||sortBy==="agg"||sortBy==="gf") ? function(x){return hon(x)[sortBy]} : function(x){return x[sortBy]};
+return f(b)-f(a) || b.gw-a.gw;
+});
+if(!list.length){ v.innerHTML = empty(); return; }
+h = '<div class="scroll"><table class="t-players"><thead><tr><th></th><th>Player</th><th>P</th><th>W</th><th>Games won</th><th>Games lost</th><th>Win %</th><th>🏆 Grand finals</th><th>'+MEDAL+' Aggregates</th><th>'+SUPER8+' Super 8s</th></tr></thead><tbody>';
+list.forEach(function(p,i){
+h += '<tr data-player="'+PLAYERS.indexOf(p)+'"><td class="pos">'+(i+1)+'</td><td class="name">'+p.n+'<small>'+tn(p.t)+'</small></td><td>'+p.p+'</td><td>'+p.w+'</td><td>'+p.gw+'</td><td>'+p.gl+'</td><td class="key">'+pct(p)+'%</td><td>'+hon(p).gf+'</td><td>'+hon(p).agg+'</td><td>'+hon(p).s8+'</td></tr>';
+});
+v.innerHTML = h + '</tbody></table></div>';
+} else if(view==="ratings"){
+bar.innerHTML = Object.keys(RATINGS).length ? "Player ratings. Tap a player to see their profile." : "No ratings entered yet.";
+var rl = PLAYERS.slice().sort(function(a,b){return (RATINGS[b.n]||0)-(RATINGS[a.n]||0) || a.n.localeCompare(b.n)});
+h = '<div class="scroll"><table class="t-aggs"><thead><tr><th></th><th>Player</th><th>Rating</th></tr></thead><tbody>';
+rl.forEach(function(p,i){
+var r = RATINGS[p.n];
+h += '<tr data-player="'+PLAYERS.indexOf(p)+'"><td class="pos">'+(r ? i+1 : "")+'</td><td class="name">'+p.n+'<small>'+tn(p.t)+'</small></td><td class="key">'+(r || "\u2014")+'</td></tr>';
+});
+v.innerHTML = h + '</tbody></table></div>';
+} else {
+bar.innerHTML = pb()+"Tap a team to filter the player ladder.";
+if(!TEAMS.some(function(t){return t.div===pen})){ v.innerHTML = empty(); return; }
+h = '<div class="cards">';
+TEAMS.filter(function(t){return t.div===pen}).forEach(function(t){
+h += '<button class="card" data-team="'+t.id+'"><h3>'+t.name+'</h3><p>'+t.div+'</p><ul>';
+PLAYERS.filter(function(p){return p.t===t.id}).forEach(function(p){h += '<li>'+p.n+'</li>'});
+h += '</ul></button>';
+});
+v.innerHTML = h + '</div>';
+}
+}
+/* Player profiles. Key = player name exactly as in PLAYERS.
+Photos: put a file in a "photos" folder named after the player, e.g. photos/rohan-reimers.jpg
+(lower case, hyphens). No photo found = initials are shown.
+Example:
+"Rohan Reimers": {style:"Attacking looper", blade:"Butterfly Viscaria", fh:"Tenergy 05", bh:"Dignics 09C", speed:8, spin:9, control:6, power:8}
+speed, spin, control and power are ratings out of 10. */
+var PROFILES = {
+"Rohan Reimers": { style:"Weak", blade:"Butterfly Outerforce ALC", fh:"Butterfly Glayzer", bh:"Butterfly Glayzer", speed:5, spin:6, control:9.2, power:6},
+"Jamie Kealley": { style:"Aggressive", blade:"Butterfly Timo Boll ALC", fh:"Tenergy 05", bh:"Tenergy 05", speed:9, spin:8, control:7, power:8}
+};
+function initials(n){var w=n.replace(/\(.*?\)/g,"").trim().split(/\s+/);return (w[0].charAt(0)+(w.length>1?w[w.length-1].charAt(0):"")).toUpperCase()}
+function slug(n){return n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}
+function rateRow(l,v){
+var n = parseFloat(v), ok = !isNaN(n); if(ok) n = Math.max(1, Math.min(10, n));
+return '<div><span>'+l+'</span><span class="track"><span class="fill" style="width:'+(ok?n*10:0)+'%"></span></span><b>'+(ok?n:"\u2014")+(ok?'<small>/10</small>':'')+'</b></div>';
+}
+function infoRow(l,v){return '<dt>'+l+'</dt><dd>'+(v||"\u2014")+'</dd>'}
+function openPlayer(i){
+var p = PLAYERS[i], pr = PROFILES[p.n] || {}, photo = pr.photo || "photos/"+slug(p.n)+".jpg";
+$("sheet").innerHTML = '<div class="prof"><div class="avatar">'+initials(p.n)+'<img src="'+photo+'" alt="" onerror="this.remove()"></div><div><h2>'+p.n+'</h2><div style="color:var(--mute)">'+tn(p.t)+'</div></div></div>'
++ '<div class="stats"><div class="stat"><b>'+(RATINGS[p.n]||"\u2014")+'</b><span>Rating</span></div><div class="stat"><b>'+hon(p).gf+'</b><span>🏆 Grand finals</span></div><div class="stat"><b>'+hon(p).agg+'</b><span>'+MEDAL+' Aggregates</span></div><div class="stat"><b>'+hon(p).s8+'</b><span>'+SUPER8+' Super 8s</span></div></div>'
++ '<div class="rate">'+rateRow("Speed",pr.speed)+rateRow("Spin",pr.spin)+rateRow("Control",pr.control)+rateRow("Power",pr.power)+'</div>'
++ '<dl class="info">'+infoRow("Playing style",pr.style)+infoRow("Blade",pr.blade)+infoRow("Forehand rubber",pr.fh)+infoRow("Backhand rubber",pr.bh)+'</dl>'
++ '<button class="close" id="close">Close</button>';
+$("dlg").showModal();
+$("close").onclick = function(){$("dlg").close()};
+}
+document.addEventListener("click", function(e){
+var el = e.target.closest("[data-v],[data-sort],[data-team],[data-team-clear],[data-pen],[data-player]");
+if(!el) { if(e.target===$("dlg")) $("dlg").close(); return; }
+if(el.dataset.v){ view = el.dataset.v; if(view!=="players") teamFilter="all"; }
+else if(el.dataset.sort){ sortBy = el.dataset.sort; }
+else if(el.dataset.teamClear){ teamFilter = "all"; }
+else if(el.dataset.pen){ pen = el.dataset.pen; teamFilter = "all"; view = "teams"; }
+else if(el.dataset.team){ teamFilter = el.dataset.team; view = "players"; }
+else if(el.dataset.player){ openPlayer(+el.dataset.player); return; }
+render();
+});
+/* Kiosk: return to the team ladder after 90 seconds without a touch. */
+function resetIdle(){
+clearTimeout(idle);
+idle = setTimeout(function(){ if(view==="scoresheet"){ resetIdle(); return; } if($("dlg").open) $("dlg").close(); view="teams"; teamFilter="all"; pen=DIVS[0]; render(); }, 90000);
+}
+["pointerdown","keydown"].forEach(function(ev){document.addEventListener(ev, resetIdle, {passive:true})});
+resetIdle(); render();
+</script>
+<script>
+/* Fixtures tab for the STTA club app.
+
+   FIXTURES holds one list of rounds per pennant. Each round:
+     r    = round number, or a name such as "Semi Finals"
+     d    = date shown to players
+     iso  = the same date as YYYY-MM-DD (used to open on the next round)
+     m    = matches: ["homeTeamId","awayTeamId"] or, once played,
+            ["homeTeamId","awayTeamId",homeScore,awayScore]
+     note = optional line shown under the round
+   Team ids are the letters in TEAMS in index.html (A to F are Pennant One). */
+(function(){
+var FIXTURES = {
+  "Pennant One": [
+    {r:1, d:"2nd September 2026", iso:"2026-09-02", m:[["A","F"],["C","D"],["E","B"]]},
+    {r:2, d:"9th September 2026", iso:"2026-09-09", m:[["D","A"],["B","C"],["F","E"]]},
+    {r:3, d:"16th September 2026", iso:"2026-09-16", m:[["A","B"],["C","E"],["F","D"]], note:"No play on 23rd and 30th September (school holidays)."},
+    {r:4, d:"7th October 2026", iso:"2026-10-07", m:[["E","A"],["C","F"],["B","D"]]},
+    {r:5, d:"14th October 2026", iso:"2026-10-14", m:[["A","C"],["F","B"],["D","E"]]},
+    {r:6, d:"21st October 2026", iso:"2026-10-21", m:[["F","A"],["D","C"],["B","E"]]},
+    {r:7, d:"28th October 2026", iso:"2026-10-28", m:[["A","D"],["C","B"],["E","F"]]},
+    {r:8, d:"4th November 2026", iso:"2026-11-04", m:[["B","A"],["E","C"],["D","F"]]},
+    {r:9, d:"11th November 2026", iso:"2026-11-11", m:[["A","E"],["F","C"],["D","B"]]},
+    {r:10, d:"18th November 2026", iso:"2026-11-18", m:[["C","A"],["B","F"],["E","D"]]},
+    {r:"Semi Finals", d:"25th November 2026", iso:"2026-11-25", m:[["1st","4th"],["2nd","3rd"]]},
+    {r:"Grand Final", d:"2nd December 2026", iso:"2026-12-02", m:[["Winner SF 1","Winner SF 2"]]}
+  ],
+  "Pennant Two": [],
+  "Pennant Three": [],
+  "Pennant Four": []
+};
+
+var chosen = {};
+
+var css = document.createElement("style");
+css.textContent =
+  ".fx{background:var(--panel);border:2px solid var(--line);border-radius:16px;overflow:hidden}" +
+  ".fx h3{margin:0;padding:16px 18px;font:700 28px \"Barlow Condensed\",\"Arial Narrow\",sans-serif;border-bottom:1px solid var(--line)}" +
+  ".match{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:18px;border-bottom:1px solid var(--line);font-weight:600;font-size:22px}" +
+  ".match .r{text-align:right}" +
+  ".match .sc{font:700 30px \"Barlow Condensed\",\"Arial Narrow\",sans-serif;color:var(--ball);min-width:64px;text-align:center}" +
+  ".note{padding:14px 18px;color:var(--mute);font-size:16px}" +
+  ".bar.rounds{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}" +
+  ".bar.rounds .chip{flex:none}" +
+  "@media (max-width:640px){.match{font-size:17px;padding:14px}.fx h3{font-size:24px}}" +
+  "@media (max-width:400px){.tab{font-size:13px}}";
+document.head.appendChild(css);
+
+var nav = document.querySelector("nav");
+var btn = document.createElement("button");
+btn.className = "tab";
+btn.setAttribute("data-v", "fixtures");
+btn.setAttribute("aria-pressed", "false");
+btn.textContent = "Fixtures";
+nav.appendChild(btn);
+
+function nm(x){ var t = TEAMS.filter(function(t){return t.id===x})[0]; return t ? t.name : x; }
+function rl(r){ return typeof r === "number" ? "Round " + r : r; }
+function today(){
+  var d = new Date();
+  return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+}
+
+var baseRender = render;
+render = function(){
+  var bar = $("bar"), v = $("view");
+  if(view !== "fixtures"){ bar.className = "bar"; baseRender(); return; }
+
+  document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.v === view); });
+  var list = FIXTURES[pen] || [];
+  if(!list.length){
+    bar.className = "bar";
+    bar.innerHTML = pb() + "Round by round fixtures and results.";
+    v.innerHTML = '<div class="empty">No fixtures entered for ' + pen + ' yet.</div>';
+    return;
+  }
+  if(chosen[pen] === undefined){
+    var t0 = today();
+    var next = list.filter(function(f){ return f.iso >= t0; })[0];
+    chosen[pen] = String((next || list[list.length-1]).r);
+  }
+  var cur = chosen[pen];
+  bar.className = "bar rounds";
+  bar.innerHTML = list.map(function(f){
+    var k = String(f.r);
+    return '<button class="chip" data-round="' + k + '" aria-pressed="' + (k === cur) + '">' + rl(f.r) + '</button>';
+  }).join("");
+  var f0 = list.filter(function(f){ return String(f.r) === cur; })[0];
+  var h = '<div class="fx"><h3>' + rl(f0.r) + ' \u00b7 ' + f0.d + '</h3>';
+  f0.m.forEach(function(m){
+    var done = m.length > 2 && m[2] !== null;
+    h += '<div class="match"><span>' + nm(m[0]) + '</span><span class="sc">' + (done ? m[2] + ' \u2013 ' + m[3] : 'v') + '</span><span class="r">' + nm(m[1]) + '</span></div>';
+  });
+  if(f0.note) h += '<div class="note">' + f0.note + '</div>';
+  v.innerHTML = h + '</div>';
+  var sel = bar.querySelector('[aria-pressed="true"]');
+  if(sel && sel.scrollIntoView) sel.scrollIntoView({inline:"center", block:"nearest"});
+};
+
+document.addEventListener("click", function(e){
+  var el = e.target.closest("[data-round]");
+  if(!el) return;
+  chosen[pen] = el.getAttribute("data-round");
+  render();
+});
+
+render();
+})();
+</script>
+<script>
+/* Sponsors tab for the STTA club app.
+
+   Sponsors are taken from the team names in TEAMS (duplicates merged, with the
+   pennants each one supports). Add a name to SKIP to leave it out.
+   Logos: put a file beside index.html named sponsor-<name>.png, lower case with
+   hyphens, e.g. sponsor-mallee-bearings.png, sponsor-cookes-pools-and-spas.png.
+   No logo found = the sponsor's name is shown on its own. */
+(function(){
+var SKIP = ["Sammy\u2019s Slammers"];
+var SECS = 6;
+var idx = 0, timer = null;
+
+var css = document.createElement("style");
+css.textContent =
+  ".sp{background:var(--panel);border:2px solid var(--line);border-radius:16px;overflow:hidden;position:relative;cursor:pointer}" +
+  ".sp-body{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px 24px;text-align:center;animation:spIn .6s ease}" +
+  ".sp-kick{font-size:16px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ball)}" +
+  ".sp-logo{max-width:min(420px,80%);max-height:200px;object-fit:contain}" +
+  ".sp-name{margin:0;font:700 56px/1.05 \"Barlow Condensed\",\"Arial Narrow\",sans-serif;color:var(--accent)}" +
+  ".sp-pens{color:var(--mute);font-size:20px}" +
+  ".sp-prog{height:6px;background:var(--bg)}" +
+  ".sp-prog i{display:block;height:100%;width:0;background:var(--ball);animation:spProg linear forwards}" +
+  ".sp-dots{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:14px}" +
+  ".sp-dot{width:44px;height:44px;border:0;background:none;padding:0;display:flex;align-items:center;justify-content:center}" +
+  ".sp-dot span{width:14px;height:14px;border-radius:50%;background:var(--line)}" +
+  ".sp-dot[aria-pressed=\"true\"] span{background:var(--accent);transform:scale(1.3)}" +
+  "@keyframes spIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}" +
+  "@keyframes spProg{from{width:0}to{width:100%}}" +
+  "@media (max-width:640px){.sp-body{min-height:340px;padding:24px 16px}.sp-name{font-size:40px}.sp-pens{font-size:17px}.sp-logo{max-height:150px}}" +
+  "@media (prefers-reduced-motion:reduce){.sp-body{animation:none}}";
+document.head.appendChild(css);
+
+var nav = document.querySelector("nav");
+var btn = document.createElement("button");
+btn.className = "tab";
+btn.setAttribute("data-v", "sponsors");
+btn.setAttribute("aria-pressed", "false");
+btn.textContent = "Sponsors";
+nav.appendChild(btn);
+
+function sponsors(){
+  var map = {}, out = [];
+  TEAMS.forEach(function(t){
+    if(SKIP.indexOf(t.name) > -1) return;
+    if(!map[t.name]){ map[t.name] = {name:t.name, divs:[]}; out.push(map[t.name]); }
+    if(map[t.name].divs.indexOf(t.div) < 0) map[t.name].divs.push(t.div);
+  });
+  return out;
+}
+function sslug(n){ return "sponsor-" + slug(n.replace(/&amp;/g, "and")) + ".png"; }
+
+function stage(){
+  var list = sponsors(), s = list[idx];
+  $("view").innerHTML =
+    '<div class="sp" data-next="1"><div class="sp-body">' +
+    '<div class="sp-kick">Thank you to our sponsors</div>' +
+    '<img class="sp-logo" src="' + sslug(s.name) + '" alt="" onerror="this.remove()">' +
+    '<h2 class="sp-name">' + s.name + '</h2>' +
+    '<div class="sp-pens">' + s.divs.join(" \u00b7 ") + '</div></div>' +
+    '<div class="sp-prog"><i style="animation-duration:' + SECS + 's"></i></div></div>' +
+    '<div class="sp-dots">' + list.map(function(x, i){
+      return '<button class="sp-dot" data-spon="' + i + '" aria-label="' + x.name.replace(/&amp;/g, "and") + '" aria-pressed="' + (i === idx) + '"><span></span></button>';
+    }).join("") + '</div>';
+  clearTimeout(timer);
+  timer = setTimeout(function(){ idx = (idx + 1) % list.length; stage(); }, SECS * 1000);
+}
+
+var baseRender = render;
+render = function(){
+  clearTimeout(timer);
+  var bar = $("bar");
+  if(view !== "sponsors"){ baseRender(); return; }
+  document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.v === view); });
+  bar.className = "bar";
+  bar.innerHTML = "Our sponsors. Tap the card to skip to the next one.";
+  if(idx >= sponsors().length) idx = 0;
+  stage();
+};
+
+document.addEventListener("click", function(e){
+  if(view !== "sponsors") return;
+  var d = e.target.closest("[data-spon]");
+  if(d){ idx = +d.getAttribute("data-spon"); stage(); return; }
+  if(e.target.closest("[data-next]")){ idx = (idx + 1) % sponsors().length; stage(); }
+});
+
+render();
+})();
+</script>
+<script>
+/* Scoresheet tab for the STTA club app.
+   Shows the digital pennant score sheet (scoresheet.html, kept beside index.html).
+   The kiosk timer is paused while this tab is open so a match in progress is never interrupted;
+   the sheet saves itself on the device as it is filled in. */
+(function(){
+var css = document.createElement("style");
+css.textContent =
+  ".ss{display:block;width:100%;height:82vh;min-height:560px;border:2px solid var(--line);border-radius:16px;background:var(--panel)}";
+document.head.appendChild(css);
+
+var nav = document.querySelector("nav");
+var btn = document.createElement("button");
+btn.className = "tab";
+btn.setAttribute("data-v", "scoresheet");
+btn.setAttribute("aria-pressed", "false");
+btn.textContent = "Scoresheet";
+nav.appendChild(btn);
+
+var baseRender = render;
+render = function(){
+  var bar = $("bar"), v = $("view");
+  if(view !== "scoresheet"){ baseRender(); return; }
+  document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.v === view); });
+  bar.className = "bar";
+  bar.innerHTML = "Pennant score sheet. Scores are saved on this device as you go.";
+  if(!v.querySelector(".ss")) v.innerHTML = '<iframe class="ss" src="scoresheet.html" title="STTA score sheet"></iframe>';
+};
+
+render();
+})();
+</script>
+</body>
+</html>
